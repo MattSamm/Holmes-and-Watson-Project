@@ -1,0 +1,548 @@
+---
+title: "Project"
+author: "Matthew Sammartino"
+date: "1/13/2019"
+output: html_document
+---
+## Introduction
+Hello if you are reading this, my name is Matthew Sammartino and you are reading my Data Visualization and Manipulation Project from the winter of 2019. I chose my Topic/Interest to be Movies Containing the Will Ferrell and John C. Reilly combination because I recently saw The Holmes and Sherlock movie over Christmas break and wanted to explore how bad of a movie it was. I remember watching the trailer and telling my brother and dad that I knew this was going to be a bad movie and that we should go see something else. However, they insisted that the duo of Will Ferrell and John C. Reilly never disapoint and we went to see the movie. Afterwards, they not only agreed that I was right, but that it was if not the worst, one of the worst movies they had ever seen. I wanted to Explore how bad it really was and rub in my superior taste (as a joke).
+
+Below is a code Chunk of all of the libraries i've used. You would need to run these in order for my code to function properly. 
+```{r Libraries, message = FALSE, warning=FALSE, results = "hide"}
+library(rvest)
+library(dplyr)
+library(plotly)
+library(stringr)
+library(tidyverse)
+library(tidytext)
+library(wordcloud)
+library(RColorBrewer)
+library(ggplot2)
+library(knitr)
+```
+
+## Thought Process
+I started off thinking that I wanted to explore how I knew that the Holmes and Watson movie was going to be so terrible. I thought that I could analyse the trailer and pick out the words and maybe analyze how it compared to other trailer and movie combinations I have seen. I thought I might be able to analyse the scripts of comedies and compare it to Holmes and Watson. However, I realized after looking into what makes something funny on Google, its very subjective. (I also found that I couldnt get the Script of Holmes and Watson because it was still in theaters). 
+
+http://www.thinctanc.co.uk/words/comedy.html
+
+I thought the article above gave me a good insight into the challenges of quantifying humor. Something can be funny if its Familiar, Unfamiliar, and exspected or unexspected. It really depends on a persons tastes. This lead me away from scripts and words and more towards reviews. I could look into what people were thinking about the movie. However, its 
+
+I looked into two review sites, Rotten Tomatoes and IMBD. I chose Rotten Tomatoes first because they had critic reviews. However, I thought I only wanted to make a table of the words used in the reviews and make word-clouds of those words. After the fact I have found they are less usefull than I would have hoped. This lead me to IMBD and to thier user-reviews. IMBD had a few problems. I Couldnt use the Selector Gadget on the score of each review which is its advantage over Rotten Tomatoes (the critic reviews dont all have ratings and some are letter grades). Also, because only a certain amount of reviews would show on the page and there wasnt a different url to load the rest of the reviews, I wasnt sure how to grab all of the user reviews. I decided to stay with the Rotten Tomatoes reviews becuase they are from critics and there is no significant advantage to go through the struggle of figuring out how to scrape all of the IMBD reviews. 
+
+Below is the code I used to try and scrape the IMDB page. I didnt attempt to clean it because It only gathered a few reviews. 
+```{r , eval = FALSE}
+url_IMBD_Sh<- "https://www.imdb.com/title/tt1255919/reviews?ref_=tt_sa_3"
+IMBD_review_data_sh <- read_html(url_IMBD_Sh)
+IMBD_reviews_sh <- html_nodes(IMBD_review_data_sh, '.show-more__control')  %>% html_text()
+IMBD_reviews_sh <- data.frame(review_text= IMBD_reviews_sh)
+
+```
+
+Below is the code that gathers all of the rotten tomatoes reviews into data.frames from the Rotten Tomatoes website. I wrote this before we learned the syntax for loops in Rstudio. I could have used a funtion to gather each page of 20 reviews by changing the "?page=2&sort=" ending of the url to be one greater each time but Im lasy and yeah. You could concatanate strings with a variable in between to get the loop effect. Not sure if this would cause more problems. I also had to join all of the pages together. 
+
+There are some flaws with this code and its Maintainablility. Becuase Holmes and Watson is a new movie, new reviews are being posted alomst daily so the amount of variables to make the data set out of has to change. There are 9 reviews on the last page and this is the number needed to change according to how mant reiviews were added. The links still work though. If their ends up being a 5th page of reviews, My code would not scrape it. another page section would need to be added. 
+
+```{r , message = FALSE, warning= FALSE}
+#####################################################################################
+# Holmes and Watson
+
+url_watson_pg1<- "https://www.rottentomatoes.com/m/holmes_and_watson_2018/reviews/"
+watson_reviews_pg1 <- read_html(url_watson_pg1)
+reviews_pg1 <- html_nodes(watson_reviews_pg1, '.the_review') %>% html_text()
+reviews_dataf_pg1 <- data.frame(L = c(1:20), text= reviews_pg1)
+
+url_watson_pg2<- "https://www.rottentomatoes.com/m/holmes_and_watson_2018/reviews/?page=2&sort="
+watson_reviews_pg2 <- read_html(url_watson_pg2)
+reviews_pg2 <- html_nodes(watson_reviews_pg2, '.the_review') %>% html_text()
+reviews_dataf_pg2 <- data.frame(L = c(1:20), text= reviews_pg2)
+
+url_watson_pg3<- "https://www.rottentomatoes.com/m/holmes_and_watson_2018/reviews/?page=3&sort="
+watson_reviews_pg3 <- read_html(url_watson_pg3)
+reviews_pg3 <- html_nodes(watson_reviews_pg3, '.the_review') %>% html_text()
+reviews_dataf_pg3 <- data.frame(L = c(1:20), text= reviews_pg3)
+
+url_watson_pg4<- "https://www.rottentomatoes.com/m/holmes_and_watson_2018/reviews/?page=4&sort="
+watson_reviews_pg4 <- read_html(url_watson_pg4)
+reviews_pg4 <- html_nodes(watson_reviews_pg4, '.the_review') %>% html_text()
+reviews_dataf_pg4 <- data.frame(L = c(1:length(reviews_pg4)), text= reviews_pg4)
+
+####
+r_1_2 <- full_join(reviews_dataf_pg1, reviews_dataf_pg2)
+r_3_4 <- full_join(reviews_dataf_pg3, reviews_dataf_pg4)
+
+Reviews_H_and_W <- full_join(r_1_2, r_3_4)
+#Reviews_H_and_W
+```
+
+The same process was applied to the Talladega Nights Rotten Tomatoes page. Total of 10 Pages. The tenth page had blank reviews so I didnt scrape the 10th page. 
+
+```{r ,message = FALSE , warning= FALSE}
+##########################################################################################################################
+# tn = Talledega Nights
+
+url_pg1<- "https://www.rottentomatoes.com/m/talladega_nights_the_ballad_of_ricky_bobby/reviews/"
+reviews_pg1 <- read_html(url_pg1)
+reviews_pg1 <- html_nodes(reviews_pg1, '.the_review') %>% html_text()
+reviews_dataf_pg1 <- data.frame(L = c(1:20), text= reviews_pg1)
+
+url_pg2<- "https://www.rottentomatoes.com/m/talladega_nights_the_ballad_of_ricky_bobby/reviews/?page=2&sort="
+reviews_pg2 <- read_html(url_pg2)
+reviews_pg2 <- html_nodes(reviews_pg2, '.the_review') %>% html_text()
+reviews_dataf_pg2 <- data.frame(L = c(1:20), text= reviews_pg2)
+
+url_pg3<- "https://www.rottentomatoes.com/m/talladega_nights_the_ballad_of_ricky_bobby/reviews/?page=3&sort="
+reviews_pg3 <- read_html(url_pg3)
+reviews_pg3 <- html_nodes(reviews_pg3, '.the_review') %>% html_text()
+reviews_dataf_pg3 <- data.frame(L = c(1:20), text= reviews_pg3)
+
+url_pg4<- "https://www.rottentomatoes.com/m/talladega_nights_the_ballad_of_ricky_bobby/reviews/?page=4&sort="
+reviews_pg4 <- read_html(url_pg4)
+reviews_pg4 <- html_nodes(reviews_pg4, '.the_review') %>% html_text()
+reviews_dataf_pg4 <- data.frame(L = c(1:20), text= reviews_pg4)
+
+url_pg5<- "https://www.rottentomatoes.com/m/talladega_nights_the_ballad_of_ricky_bobby/reviews/?page=5&sort="
+reviews_pg5 <- read_html(url_pg5)
+reviews_pg5 <- html_nodes(reviews_pg5, '.the_review') %>% html_text()
+reviews_dataf_pg5 <- data.frame(L = c(1:20), text= reviews_pg5)
+
+url_pg6<- "https://www.rottentomatoes.com/m/talladega_nights_the_ballad_of_ricky_bobby/reviews/?page=6&sort="
+reviews_pg6 <- read_html(url_pg6)
+reviews_pg6 <- html_nodes(reviews_pg6, '.the_review') %>% html_text()
+reviews_dataf_pg6 <- data.frame(L = c(1:20), text= reviews_pg6)
+
+url_pg7<- "https://www.rottentomatoes.com/m/talladega_nights_the_ballad_of_ricky_bobby/reviews/?page=7&sort="
+reviews_pg7 <- read_html(url_pg7)
+reviews_pg7 <- html_nodes(reviews_pg7, '.the_review') %>% html_text()
+reviews_dataf_pg7 <- data.frame(L = c(1:20), text= reviews_pg7)
+
+url_pg8<- "https://www.rottentomatoes.com/m/talladega_nights_the_ballad_of_ricky_bobby/reviews/?page=8&sort="
+reviews_pg8 <- read_html(url_pg8)
+reviews_pg8 <- html_nodes(reviews_pg8, '.the_review') %>% html_text()
+reviews_dataf_pg8 <- data.frame(L = c(1:20), text= reviews_pg8)
+
+url_pg9<- "https://www.rottentomatoes.com/m/talladega_nights_the_ballad_of_ricky_bobby/reviews/?page=9&sort="
+reviews_pg9 <- read_html(url_pg9)
+reviews_pg9 <- html_nodes(reviews_pg9, '.the_review') %>% html_text()
+reviews_dataf_pg9 <- data.frame(L = c(1:20), text= reviews_pg9)
+
+# url_pg10<- "https://www.rottentomatoes.com/m/talladega_nights_the_ballad_of_ricky_bobby/reviews/?page=10&sort="
+# reviews_pg10 <- read_html(url_pg10)
+# reviews_pg10 <- html_nodes(reviews_pg10, '.the_review') %>% html_text()
+# reviews_dataf_pg10 <- data.frame(L = c(1:4), text= reviews_pg10)
+
+
+r_1_2 <- full_join(reviews_dataf_pg1, reviews_dataf_pg2)
+r_3_4 <- full_join(reviews_dataf_pg3, reviews_dataf_pg4)
+r_5_6 <- full_join(reviews_dataf_pg5, reviews_dataf_pg6)
+r_7_8 <- full_join(reviews_dataf_pg7, reviews_dataf_pg8)
+#r_9_10 <- full_join(reviews_dataf_pg9, reviews_dataf_pg10)
+
+
+Reviews_1_4 <- full_join(r_1_2, r_3_4)
+Reviews_5_8 <- full_join(r_5_6, r_7_8)
+
+Reviews_1_8 <- full_join(Reviews_1_4, Reviews_5_8)
+Reviews_tn <- full_join(Reviews_1_8, reviews_dataf_pg9)
+#Reviews_tn
+```
+
+Same process was applied to the Step Brothers Rotten Tomatoes Reviews. Total of 10 Pages. 
+
+```{r, message = FALSE, warning= FALSE }
+##########################################################################################
+# Step Brothers
+
+url_pg1<- "https://www.rottentomatoes.com/m/1193743-step_brothers/reviews/"
+reviews_pg1 <- read_html(url_pg1)
+reviews_pg1 <- html_nodes(reviews_pg1, '.the_review') %>% html_text()
+reviews_dataf_pg1 <- data.frame(L = c(1:20), text= reviews_pg1)
+
+url_pg2<- "https://www.rottentomatoes.com/m/1193743-step_brothers/reviews/?page=2&sort="
+reviews_pg2 <- read_html(url_pg2)
+reviews_pg2 <- html_nodes(reviews_pg2, '.the_review') %>% html_text()
+reviews_dataf_pg2 <- data.frame(L = c(1:20), text= reviews_pg2)
+
+url_pg3<- "https://www.rottentomatoes.com/m/1193743-step_brothers/reviews/?page=3&sort="
+reviews_pg3 <- read_html(url_pg3)
+reviews_pg3 <- html_nodes(reviews_pg3, '.the_review') %>% html_text()
+reviews_dataf_pg3 <- data.frame(L = c(1:20), text= reviews_pg3)
+
+url_pg4<- "https://www.rottentomatoes.com/m/1193743-step_brothers/reviews/?page=4&sort="
+reviews_pg4 <- read_html(url_pg4)
+reviews_pg4 <- html_nodes(reviews_pg4, '.the_review') %>% html_text()
+reviews_dataf_pg4 <- data.frame(L = c(1:20), text= reviews_pg4)
+
+url_pg5<- "https://www.rottentomatoes.com/m/1193743-step_brothers/reviews/?page=5&sort="
+reviews_pg5 <- read_html(url_pg5)
+reviews_pg5 <- html_nodes(reviews_pg5, '.the_review') %>% html_text()
+reviews_dataf_pg5 <- data.frame(L = c(1:20), text= reviews_pg5)
+
+url_pg6<- "https://www.rottentomatoes.com/m/1193743-step_brothers/reviews/?page=6&sort="
+reviews_pg6 <- read_html(url_pg6)
+reviews_pg6 <- html_nodes(reviews_pg6, '.the_review') %>% html_text()
+reviews_dataf_pg6 <- data.frame(L = c(1:20), text= reviews_pg6)
+
+url_pg7<- "https://www.rottentomatoes.com/m/1193743-step_brothers/reviews/?page=7&sort="
+reviews_pg7 <- read_html(url_pg7)
+reviews_pg7 <- html_nodes(reviews_pg7, '.the_review') %>% html_text()
+reviews_dataf_pg7 <- data.frame(L = c(1:20), text= reviews_pg7)
+
+url_pg8<- "https://www.rottentomatoes.com/m/1193743-step_brothers/reviews/?page=8&sort="
+reviews_pg8 <- read_html(url_pg8)
+reviews_pg8 <- html_nodes(reviews_pg8, '.the_review') %>% html_text()
+reviews_dataf_pg8 <- data.frame(L = c(1:20), text= reviews_pg8)
+
+url_pg9<- "https://www.rottentomatoes.com/m/1193743-step_brothers/reviews/?page=9&sort="
+reviews_pg9 <- read_html(url_pg9)
+reviews_pg9 <- html_nodes(reviews_pg9, '.the_review') %>% html_text()
+reviews_dataf_pg9 <- data.frame(L = c(1:20), text= reviews_pg9)
+
+url_pg10<- "https://www.rottentomatoes.com/m/1193743-step_brothers/reviews/?page=10&sort="
+reviews_pg10 <- read_html(url_pg10)
+reviews_pg10 <- html_nodes(reviews_pg10, '.the_review') %>% html_text()
+#reviews_pg10
+reviews_dataf_pg10 <- data.frame(L = c(1:5), text= reviews_pg10)
+
+# 
+
+r_1_2 <- full_join(reviews_dataf_pg1, reviews_dataf_pg2)
+r_3_4 <- full_join(reviews_dataf_pg3, reviews_dataf_pg4)
+r_5_6 <- full_join(reviews_dataf_pg5, reviews_dataf_pg6)
+r_7_8 <- full_join(reviews_dataf_pg7, reviews_dataf_pg8)
+r_9_10 <- full_join(reviews_dataf_pg9, reviews_dataf_pg10)
+
+Reviews_1_4 <- full_join(r_1_2, r_3_4)
+Reviews_5_8 <- full_join(r_5_6, r_7_8)
+
+Reviews_1_8 <- full_join(Reviews_1_4, Reviews_5_8)
+Reviews_sb <- full_join(Reviews_1_8, r_9_10)
+#Reviews_sb
+```
+
+Once the data was scraped, I used the tidytext library to unnest_tokens command which separates the sentances into rows of individual words. The anti join with stop_words gets rid of words like "the", "and", and "a" becuase they are meaningless fo our analysis. I then view the 20 most common words and kint the table of those words into the md file.
+
+The word cloud library lets you nicely create word clouds and I used this along with the colorbrewer package to make the color represent how many words a size represented. I repreated the same steps for all three movies.
+
+However, there was a weird problem that occured with the sizing of the word clouds in the knitted output. The word clouds seemed to ignore code chunk specifications on "out.height" or "fig.height". When running the individual command after running the code chunk as a whole, if would resise correctly. However, when multiple plots were attached to the same code chunk, words were cut off.  
+
+```{r , message = FALSE, warning= FALSE, out.height= "120000px"} 
+#knitr::opts_chunk$set(fig.height = )
+#library(tidyverse)
+#library(tidytext)
+#library(wordcloud)
+#library(RColorBrewer)
+
+HW_review_words <- unnest_tokens(Reviews_H_and_W, word, text)
+#HW_review_words %>% count(word, sort=TRUE) # %>% View()
+
+HW_reduced_review_words <- anti_join(HW_review_words, stop_words)
+#View(HW_reduced_review_words)
+HW_reduced_review_words %>% count(word, sort=TRUE) %>% head(20)  %>% knitr::kable()
+
+HolmesWRCount <- HW_reduced_review_words %>% count(word) %>% ungroup
+#HolmesWRCount
+
+wordcloud(HolmesWRCount$word, HolmesWRCount$n, random.order = FALSE, max.words = 125, colors = brewer.pal(8, "Dark2"))
+```
+
+```{r , message = FALSE}
+
+#################################
+# TN
+
+TN_review_words <- unnest_tokens(Reviews_tn, word, text)
+#TN_review_words %>% count(word, sort=TRUE) # %>% View()
+
+TN_reduced_review_words <- anti_join(TN_review_words, stop_words)
+#View(TN_reduced_review_words)
+TN_reduced_review_words %>% count(word, sort=TRUE) %>% head(20) %>% knitr::kable()
+
+TN_WRCount <- TN_reduced_review_words %>% count(word) %>% ungroup
+#TN_WRCount
+
+#, fig.height = 14000, out.height= 14000
+wordcloud(TN_WRCount$word, TN_WRCount$n, random.order = FALSE, max.words = 70, colors = brewer.pal(8, "Dark2"))
+```
+
+```{r , message= FALSE}
+###################################
+# SB
+
+SB_review_words <- unnest_tokens(Reviews_sb, word, text)
+#SB_review_words %>% count(word, sort=TRUE) # %>% View()
+
+SB_reduced_review_words <- anti_join(SB_review_words, stop_words)
+#View(SB_reduced_review_words)
+SB_reduced_review_words %>% count(word, sort=TRUE) %>% head(20) %>% knitr::kable()
+
+SB_WRCount <- SB_reduced_review_words %>% count(word) %>% ungroup
+#SB_WRCount
+
+
+wordcloud(SB_WRCount$word, SB_WRCount$n, random.order = FALSE, max.words = 70, colors = brewer.pal(8, "Dark2"))
+
+```
+
+## Box Office Data
+
+Lastly, I decided to find some values for how much money the movie was collecting. I used Box office mojo. This ran into the same problem as the reivews in that Holmes and Watson is still being updated daily. Its still making money from theaters and Box office mojo is updating the data. Its about 5 days behind. For Talladega nights and Step Brothers, there are no updates needed. The same web scraping tecqunique is used from the reviews but the css selector is less precise and threw in some other terms when I was selecting the total box office revenue(from the calandar view). I manually removed these terms but a loop/ function would have been more useful to create. I later found out that I was looking at the calander view of the box office data on Boxofficemojo.com and a link gets you a table that more easily scrapeable. 
+
+I made a function that takes the table view url of a movie from boxofficemojo.com and plots two plot_ly graphs, one of the daily gross per day and one that is the net gross as of the day out of theater. On the net gross graph, it has markers that label the gross of that day as well. I will talk about the function later in this document along with more struggels I went through in generalizing it. 
+
+For my attempts on the calander view of data from boxofficemojo.com, the css selectors were not prefectly useful. I had to do some string manipulation after gathering the data for each movie and manually remove some terms. I gatherd the calendar view data by gross(money per day) and then by total gross because of the css selectors being inprecise. There were random values that were incorrect that I would exclude using the SelectorGadget but would still show up in the data. Below is the code that stores the gross per day in Box_Office_data_perday_SH, Box_Office_data_perday_TN, and Box_Office_data_perday_SB. I let SH stand for Holmes and Watson, TN to stand for Talladega Nights and SB to stand for Step Brothers. 
+
+```{r Gross Each Day From Calandar View, message = FALSE, warning = FALSE}
+# Box office values
+################# money per day ####################################################################################
+# Holmes and Watson
+url_Box_Sh<- "https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=holmeswatson.htm"
+box_data <- read_html(url_Box_Sh)
+box_data_hs <- html_nodes(box_data, 'td:nth-child(4) font')  %>% html_text()
+box_data_hs
+box_data_hs <- str_split_fixed(box_data_hs, '/', 2)[,1] 
+box_data_hs_string <- box_data_hs
+box_data_hs <- str_remove(box_data_hs, '[$]') %>%  str_remove_all(',')
+#box_data_hs
+box_data_hs <- as.numeric(box_data_hs)
+Box_Office_data_perday_SH <- data.frame(day = c(1:length(box_data_hs)), money_per_day= box_data_hs, money_per_day_string= box_data_hs_string)
+
+# Talladega Nights 
+url_Box_tn<- "https://www.boxofficemojo.com/movies/?page=daily&id=talladeganights.htm"
+box_data <- read_html(url_Box_tn)
+box_data_tn <- html_nodes(box_data, 'center br+ center font:nth-child(3) , center center font:nth-child(2)')  %>% html_text()
+box_data_tn <- str_split_fixed(box_data_tn, '/', 2)[,1] 
+box_data_hs_string <- box_data_tn
+box_data_tn <- str_remove(box_data_tn, '[$]') %>%  str_remove_all(',')
+#box_data_tn
+box_data_tn <- as.numeric(box_data_tn)
+Box_Office_data_perday_TN <- data.frame(day = c(1:65), money_per_day= box_data_tn, money_per_day_string= box_data_hs_string)
+
+# Step Brothers
+url_Box_sb<- "https://www.boxofficemojo.com/movies/?page=daily&id=stepbrothers.htm"
+box_data <- read_html(url_Box_sb)
+box_data_sb <- html_nodes(box_data, 'center br+ center font:nth-child(3) , center center font:nth-child(2)')  %>% html_text()
+box_data_sb <- str_split_fixed(box_data_sb, '/', 2)[,1] 
+box_data_hs_string <- box_data_sb
+box_data_sb <- str_remove(box_data_sb, '[$]') %>%  str_remove_all(',')
+#box_data_sb
+box_data_sb <- as.numeric(box_data_sb)
+Box_Office_data_perday_SB <- data.frame(day = c(1:59), money_per_day= box_data_sb, money_per_day_string= box_data_hs_string)
+####################################################################################################################
+
+```
+
+Below is the data that stores the Total gross as of the day in Box_Office_data_SH, Box_Office_data_TN, and Box_Office_data_SB. This code is very unusefull to apply to another movie. 
+
+```{r Revenue Total per Day From Calander View, warning= FALSE, message = FALSE}
+############# total revenue as of the day ##########################################################################
+# Holmes and Watson
+url_Box_Sh<- "https://www.boxofficemojo.com/movies/?page=daily&id=holmeswatson.htm"
+box_data <- read_html(url_Box_Sh)
+box_data_hs <- html_nodes(box_data, 'table~ table br+ center font:nth-child(15) , font:nth-child(17) , br:nth-child(9)~ br+ font')  %>% html_text()
+#box_data_hs
+box_data_hs <- box_data_hs[c(2:3,5:7,9:10,12:length(box_data_hs))]
+box_data_hs <- str_split_fixed(box_data_hs, '/', 2)[,1]
+box_data_hs_string <- box_data_hs
+box_data_hs <- str_remove(box_data_hs, '[$]') %>%  str_remove_all(',')
+#box_data_hs
+box_data_hs <- as.numeric(box_data_hs)
+box_data_hs
+Box_Office_data_SH <- data.frame(day = c(1:length(box_data_hs)), money_total= box_data_hs, money_total_string= box_data_hs_string)
+
+# Talladega Nights
+url_Box_tn<- "https://www.boxofficemojo.com/movies/?page=daily&id=talladeganights.htm"
+box_data <- read_html(url_Box_tn)
+box_data_tn <- html_nodes(box_data, 'br+ center font:nth-child(15) , font:nth-child(17) , br:nth-child(9)~ br+ font')  %>% html_text()
+
+box_data_tn <- box_data_tn[c(2:3,5:8,10:31,33:35,37:46,48:65,67:72)]
+box_data_tn <- str_split_fixed(box_data_tn, '/', 2)[,1] 
+box_data_tn_string <- box_data_tn
+box_data_tn <- str_remove(box_data_tn, '[$]') %>%  str_remove_all(',')
+#box_data_tn
+box_data_tn <- as.numeric(box_data_tn)
+Box_Office_data_TN <- data.frame(day = c(1:65), money_total= box_data_tn, money_total_string= box_data_tn_string)
+
+# Step Brothers
+url_Box_sb<- "https://www.boxofficemojo.com/movies/?page=daily&id=stepbrothers.htm"
+box_data <- read_html(url_Box_sb)
+box_data_sb <- html_nodes(box_data, 'table~ table br+ center font:nth-child(15) , font:nth-child(17) , br:nth-child(9)~ br+ font')  %>% html_text()
+#box_data_sb
+box_data_sb <- box_data_sb[c(2:3,5:8,10,12:41,43,46:48,50:56,58:64,66:69)]
+box_data_sb <- str_split_fixed(box_data_sb, '/', 2)[,1] 
+box_data_sb_string <- box_data_sb
+box_data_sb <- str_remove(box_data_sb, '[$]') %>%  str_remove_all(',')
+#box_data_sb
+box_data_sb <- as.numeric(box_data_sb)
+Box_Office_data_SB <- data.frame(day = c(1:59), money_total= box_data_sb, money_total_string= box_data_sb_string)
+
+#library(ggplot2)
+
+#ggplot(Box_Office_data_TN,aes(x= day , y = money_total))+geom_smooth()+geom_point() 
+#ggplot(Box_Office_data_SH,aes(x= day , y = money_total))+geom_smooth()+geom_point()
+#ggplot(Box_Office_data_SB,aes(x= day , y = money_total))+geom_smooth()+geom_point()
+```
+
+After gathering the data from the calander view web pages, I joined the Gross and total gross data for each movie into its own data set (Box_Office_SH, Box_Office_TN, Box_Office_SB). I then gave each of these data sets a movie label "m" and joined all trhee movies into the same data set in order to graph them all into the same plot_ly graph. 
+
+```{r Calandar View Plots}
+
+#library(plotly)
+Box_Office_SH <- full_join(Box_Office_data_SH, Box_Office_data_perday_SH)
+plot_ly(Box_Office_SH, x=~day, y= ~money_per_day, hoverinfo= "text") %>% 
+  add_markers(text= ~paste(day, "<br />", money_per_day_string))
+
+Box_Office_TN <- full_join(Box_Office_data_TN, Box_Office_data_perday_TN)
+plot_ly(Box_Office_TN, x=~day, y= ~money_per_day, hoverinfo= "text") %>% 
+  add_markers(text= ~paste(day, "<br />", money_per_day_string))
+
+Box_Office_SB <- full_join(Box_Office_data_SB, Box_Office_data_perday_SB)
+plot_ly(Box_Office_SB, x=~day, y= ~money_per_day, hoverinfo= "text") %>% 
+  add_markers(text= ~paste(day, "<br />", money_per_day_string))
+
+# all three plot_ly graphs together.
+Box_Office_SB <- mutate(Box_Office_SB, m = "Step Brothers")
+Box_Office_SH <- mutate(Box_Office_SH, m = "Holmes and Sherlock")
+Box_Office_TN <- mutate(Box_Office_TN, m = "Talladega Nights")
+
+Box_Office <- full_join(Box_Office_SB, Box_Office_TN)
+Box_Office <- full_join(Box_Office, Box_Office_SH)
+
+```
+
+Below is the Plot_ly graph that plots all of the Will Ferrell and John C Oriely movies in one graph with their individual break even points graphed as horizontal lines. Plot_ly is bad with coloring by group and Im not sure that I figured out how to match the movie with its line besides that the lines have the saem length as the amount of days they were in theaters. 
+
+```{r The Plot}
+
+Box_Office %>% group_by(m) %>% plot_ly(x=~day, y= ~money_total, hoverinfo= "text") %>% 
+  add_markers(text= ~paste(m, "<br />", "Day ", day,": Total:", money_total_string, "<br />", money_per_day_string, " Increase"), color= ~m) %>% 
+  add_segments(x = 0, xend = nrow(Box_Office_SH), y = 42000000, yend = 42000000, color= I("red"), text= "$42 Million: Holmes and Watson") %>%
+  add_segments(x = 0, xend = 59, y = 65000000, yend =65000000, color= I("blue"), text= "$65 Million: Step Brothers") %>%
+  add_segments(x = 0, xend = 65, y = 72500000, yend = 72500000,color= I("green"), text= "$72.5 Million: Talladega Nights")
+
+
+```
+
+
+
+```{r Good example}
+########
+## example that works for any link given.
+# $BOX OFFICE MOJO LINK$
+
+#function
+
+Box_data_graph <- function(url) {
+url_Box <- url
+box_data <- read_html(url_Box)
+
+box_data_F <- html_nodes(box_data, 'tr+ tr td:nth-child(4) font , td:nth-child(9) font , td:nth-child(10) font') %>% html_text()
+box_data_F <- box_data_F[2:length(box_data_F)]
+box_data_gross <- box_data_F[c(TRUE,FALSE,FALSE)]
+box_data_total <- box_data_F[c(FALSE,TRUE,FALSE)]
+box_data_days <- box_data_F[c(FALSE,FALSE,TRUE)]
+
+#box_data_total
+#box_data_gross
+#box_data_days
+
+box_data_bb <- data.frame(day= as.numeric(box_data_days), total_string= box_data_total, gross_string= box_data_gross)
+#box_data_bb
+box_data_bb <- arrange(box_data_bb, day)
+#box_data_bb
+
+box_data_bb <- mutate(box_data_bb, total = str_remove(total_string, '[$]') %>%  str_remove_all(',') %>% as.numeric(), gross = str_remove(gross_string, '[$]') %>%  str_remove_all(',') %>% as.numeric())
+
+x_label <- "Day's in Theathers"
+y_label <- "Gross"
+y_2_label <- "Total Gross"
+#box_data_bb
+
+#plot_1 <- plot_ly(box_data_bb, x=~day, y= ~gross, hoverinfo= "text") %>% 
+ # add_markers(text= ~paste(day, "<br />", gross_string))
+
+#plot_2 <- plot_ly(box_data_bb, x=~day, y= ~total, hoverinfo= "text") %>% 
+  #add_markers(text= ~paste("Day ", day,": Total:", total_string, "<br />", gross_string, " Increase"))
+
+plot_1 <- plot_ly(box_data_bb, x=~day, y= ~gross, hoverinfo= "text") %>%
+  add_markers(text= ~paste(day, "<br />", gross_string)) %>% layout(xaxis = list(x_label), yaxis = list(y_label))
+
+plot_2 <- plot_ly(box_data_bb, x=~day, y= ~total, hoverinfo= "text", mode = "markers") %>%
+  add_markers(text= ~paste("Day ", day,": Total:", total_string, "<br />", gross_string, " Increase")) %>% layout(xaxis = list(x_label), yaxis = list(y_2_label))
+
+return(list(plot_1,plot_2))
+}
+
+Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=stepbrothers.htm&sort=avg&order=DESC&p=.htm")
+Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=talladeganights.htm")
+Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=holmeswatson.htm")
+
+```
+
+```{r , eval=FALSE}
+
+plots <- Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=stepbrothers.htm&sort=avg&order=DESC&p=.htm")
+plots_2 <- Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=talladeganights.htm")
+plots_3 <- Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=holmeswatson.htm")
+plots[1]
+plots[2]
+plots_2[1]
+plots_2[2]
+plots_3[1]
+plots_3[2]
+
+
+```
+
+```{r example for fix to sb, eval= FALSE}
+######## fix to sb #########################################
+
+url_Box <- "https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=stepbrothers.htm&sort=avg&order=DESC&p=.htm"
+box_data <- read_html(url_Box)
+box_data_F <- html_nodes(box_data, 'tr+ tr td:nth-child(4) font , td:nth-child(9) font , td:nth-child(10) font') %>% html_text()
+box_data_F <- box_data_F[2:length(box_data_F)]
+box_data_gross <- box_data_F[c(TRUE,FALSE,FALSE)]
+box_data_total <- box_data_F[c(FALSE,TRUE,FALSE)]
+box_data_days <- box_data_F[c(FALSE,FALSE,TRUE)]
+
+box_data_total
+box_data_gross
+box_data_days
+
+box_data_bb <- data.frame(day= as.numeric(box_data_days), total_string= box_data_total, gross_string= box_data_gross)
+box_data_bb
+box_data_bb <- arrange(box_data_bb, day)
+box_data_bb
+
+box_data_bb <- mutate(box_data_bb, total = str_remove(total_string, '[$]') %>%  str_remove_all(',') %>% as.numeric(), gross = str_remove(gross_string, '[$]') %>%  str_remove_all(',') %>% as.numeric())
+
+box_data_bb
+
+plot_ly(box_data_bb, x=~day, y= ~gross, hoverinfo= "text") %>%
+  add_markers(text= ~paste(day, "<br />", gross_string)) %>% layout(xaxis = list(x_label), yaxis = list(y_label))
+
+plot_ly(box_data_bb, x=~day, y= ~total, hoverinfo= "text", mode = "markers") %>%
+  add_markers(text= ~paste("Day ", day,": Total:", total_string, "<br />", gross_string, " Increase")) %>% layout(xaxis = list(x_label), yaxis = list(y_2_label)) 
+
+##################
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

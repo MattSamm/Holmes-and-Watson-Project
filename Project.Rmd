@@ -2,7 +2,9 @@
 title: "Project"
 author: "Matthew Sammartino"
 date: "1/13/2019"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 ## Introduction
 Hello if you are reading this, my name is Matthew Sammartino and you are reading my Data Visualization and Manipulation Project from the winter of 2019. I chose my Topic/Interest to be Movies Containing the Will Ferrell and John C. Reilly combination because I recently saw The Holmes and Sherlock movie over Christmas break and wanted to explore how bad of a movie it was. I remember watching the trailer and telling my brother and dad that I knew this was going to be a bad movie and that we should go see something else. However, they insisted that the duo of Will Ferrell and John C. Reilly never disapoint and we went to see the movie. Afterwards, they not only agreed that I was right, but that it was if not the worst, one of the worst movies they had ever seen. I wanted to Explore how bad it really was and rub in my superior taste (as a joke).

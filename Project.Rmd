@@ -412,18 +412,19 @@ Box_Office <- full_join(Box_Office, Box_Office_SH)
 
 Below is the Plot_ly graph that plots all of the Will Ferrell and John C Oriely movies in one graph with their individual break even points graphed as horizontal lines. Plot_ly is bad with coloring by group and Im not sure that I figured out how to match the movie with its line besides that the lines have the saem length as the amount of days they were in theaters. 
 
-```{r The Plot, message = FALSE, warning=FALSE}
+```{r The Plot}
+#, message = FALSE, warning=FALSE}
 
 Box_Office %>% group_by(m) %>% plot_ly(x=~day, y= ~money_total, hoverinfo= "text") %>% 
   add_markers(text= ~paste(m, "<br />", "Day ", day,": Total:", money_total_string, "<br />", money_per_day_string, " Increase"), color= ~m) %>% 
-  add_segments(x = 0, xend = nrow(Box_Office_SH), y = 42000000, yend = 42000000, color= I("red"), text= "$42 Million: Holmes and Watson") %>%
-  add_segments(x = 0, xend = 59, y = 65000000, yend =65000000, color= I("blue"), text= "$65 Million: Step Brothers") %>%
-  add_segments(x = 0, xend = 65, y = 72500000, yend = 72500000,color= I("green"), text= "$72.5 Million: Talladega Nights")
+  add_segments(x = 0, xend = nrow(Box_Office_SH), y = 42000000, yend = 42000000, color= I("grey"), name= I("$42 Million: Holmes and Watson")) %>%
+  add_segments(x = 0, xend = 59, y = 65000000, yend =65000000, color= I("grey"), name= I("$65 Million: Step Brothers")) %>%
+  add_segments(x = 0, xend = 65, y = 72500000, yend = 72500000, color= I("grey"), name= I("$72.5 Million: Talladega Nights"))
 
 
 ```
 
-
+After getting this graph done, I wanted to speed up and generalize the process of graphing a movies box office data. On the box office mojo site, they dont always order the days correctly when graphing so their charts look wonky. I attempted to write a function that graphs a plot for the gross per day and a graph for the total as of the day for any movie link on boxofficemojo.com. The function works in Rstudio but when I knit it into an HTML file it doesnt graph the plots that were supposed to be returned. To fix this I commented out the first plot. The second plot has the gross per day data as a marker on each day point. 
 
 ```{r Good example, message = FALSE, warning=FALSE}
 ########
@@ -464,35 +465,56 @@ y_2_label <- "Total Gross"
 #plot_2 <- plot_ly(box_data_bb, x=~day, y= ~total, hoverinfo= "text") %>% 
   #add_markers(text= ~paste("Day ", day,": Total:", total_string, "<br />", gross_string, " Increase"))
 
-plot_1 <- plot_ly(box_data_bb, x=~day, y= ~gross, hoverinfo= "text") %>%
-  add_markers(text= ~paste(day, "<br />", gross_string)) %>% layout(xaxis = list(x_label), yaxis = list(y_label))
+#plot_1 <- plot_ly(box_data_bb, x=~day, y= ~gross, hoverinfo= "text") %>%
+#  add_markers(text= ~paste(day, "<br />", gross_string)) %>% layout(xaxis = list(x_label), yaxis = list(y_label))
 
-plot_2 <- plot_ly(box_data_bb, x=~day, y= ~total, hoverinfo= "text", mode = "markers") %>%
+plot_ly(box_data_bb, x=~day, y= ~total, hoverinfo= "text", mode = "markers") %>%
   add_markers(text= ~paste("Day ", day,": Total:", total_string, "<br />", gross_string, " Increase")) %>% layout(xaxis = list(x_label), yaxis = list(y_2_label))
 
-return(list(plot_1,plot_2))
+#return(list(plot_1,plot_2))
 }
 
-#Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=stepbrothers.htm&sort=avg&order=DESC&p=.htm")
-#Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=talladeganights.htm")
-#Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=holmeswatson.htm")
+Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=stepbrothers.htm&sort=avg&order=DESC&p=.htm")
+Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=talladeganights.htm")
+Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=holmeswatson.htm")
 
 ```
 
-```{r , warning=FALSE, message=FALSE}
+Im not sure why the plots wouldnt output in the HTML file using the code below. 
+
+```{r , warning=FALSE, message=FALSE, eval=FALSE}
 
 plots <- Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=stepbrothers.htm&sort=avg&order=DESC&p=.htm")
 plots_2 <- Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=talladeganights.htm")
 plots_3 <- Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=holmeswatson.htm")
-plots[1]
-plots[2]
-plots_2[1]
-plots_2[2]
-plots_3[1]
-plots_3[2]
-
-
 ```
+
+```{r , eval=FALSE}
+plots[1]
+```
+
+```{r, eval=FALSE }
+plots[2]
+```
+
+```{r, eval=FALSE }
+plots_2[1]
+```
+
+```{r , eval=FALSE}
+plots_2[2]
+```
+
+```{r, eval=FALSE }
+plots_3[1]
+```
+
+```{r , eval=FALSE}
+plots_3[2]
+```
+
+Step Brothers was an example of when boxofficemojo.com had their days mixed up in their data set. This fix was made to generally apply to all links passed into my general function above. 
+
 
 ```{r example for fix to sb, eval= FALSE}
 ######## fix to sb #########################################

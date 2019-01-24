@@ -473,13 +473,13 @@ plot_2 <- plot_ly(box_data_bb, x=~day, y= ~total, hoverinfo= "text", mode = "mar
 return(list(plot_1,plot_2))
 }
 
-Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=stepbrothers.htm&sort=avg&order=DESC&p=.htm")
-Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=talladeganights.htm")
-Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=holmeswatson.htm")
+#Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=stepbrothers.htm&sort=avg&order=DESC&p=.htm")
+#Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=talladeganights.htm")
+#Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=holmeswatson.htm")
 
 ```
 
-```{r , eval=FALSE}
+```{r , warning=FALSE, message=FALSE}
 
 plots <- Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=stepbrothers.htm&sort=avg&order=DESC&p=.htm")
 plots_2 <- Box_data_graph("https://www.boxofficemojo.com/movies/?page=daily&view=chart&id=talladeganights.htm")

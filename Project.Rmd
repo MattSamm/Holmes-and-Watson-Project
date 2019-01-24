@@ -2,9 +2,7 @@
 title: "Project"
 author: "Matthew Sammartino"
 date: "1/13/2019"
-output:
-  html_document: default
-  pdf_document: default
+output: html_document
 ---
 ## Introduction
 Hello if you are reading this, my name is Matthew Sammartino and you are reading my Data Visualization and Manipulation Project from the winter of 2019. I chose my Topic/Interest to be Movies Containing the Will Ferrell and John C. Reilly combination because I recently saw The Holmes and Sherlock movie over Christmas break and wanted to explore how bad of a movie it was. I remember watching the trailer and telling my brother and dad that I knew this was going to be a bad movie and that we should go see something else. However, they insisted that the duo of Will Ferrell and John C. Reilly never disapoint and we went to see the movie. Afterwards, they not only agreed that I was right, but that it was if not the worst, one of the worst movies they had ever seen. I wanted to Explore how bad it really was and rub in my superior taste (as a joke).
@@ -387,7 +385,7 @@ Box_Office_data_SB <- data.frame(day = c(1:59), money_total= box_data_sb, money_
 
 After gathering the data from the calander view web pages, I joined the Gross and total gross data for each movie into its own data set (Box_Office_SH, Box_Office_TN, Box_Office_SB). I then gave each of these data sets a movie label "m" and joined all trhee movies into the same data set in order to graph them all into the same plot_ly graph. 
 
-```{r Calandar View Plots}
+```{r Calandar View Plots, message = FALSE, warning=FALSE}
 
 #library(plotly)
 Box_Office_SH <- full_join(Box_Office_data_SH, Box_Office_data_perday_SH)
@@ -414,7 +412,7 @@ Box_Office <- full_join(Box_Office, Box_Office_SH)
 
 Below is the Plot_ly graph that plots all of the Will Ferrell and John C Oriely movies in one graph with their individual break even points graphed as horizontal lines. Plot_ly is bad with coloring by group and Im not sure that I figured out how to match the movie with its line besides that the lines have the saem length as the amount of days they were in theaters. 
 
-```{r The Plot}
+```{r The Plot, message = FALSE, warning=FALSE}
 
 Box_Office %>% group_by(m) %>% plot_ly(x=~day, y= ~money_total, hoverinfo= "text") %>% 
   add_markers(text= ~paste(m, "<br />", "Day ", day,": Total:", money_total_string, "<br />", money_per_day_string, " Increase"), color= ~m) %>% 
@@ -427,7 +425,7 @@ Box_Office %>% group_by(m) %>% plot_ly(x=~day, y= ~money_total, hoverinfo= "text
 
 
 
-```{r Good example}
+```{r Good example, message = FALSE, warning=FALSE}
 ########
 ## example that works for any link given.
 # $BOX OFFICE MOJO LINK$
